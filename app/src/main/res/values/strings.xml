@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">GyanMatrix</string>
+    <string name="runs">Sort by Runs</string>
+    <string name="matches">Sort by Matches Played</string>
+    <string name="az">A-Z</string>
+    <string name="batsman">Ex:Sachin</string>
+</resources>
