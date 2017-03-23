@@ -18,11 +18,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <meta-data
-                android:name="android.app.searchable"
+                android:name="android.support.v7.app.searchable"
                 android:resource="@xml/xml" />
         </activity>
         <activity android:name=".Player"
-            android:parentActivityName=".MainActivity">
+            android:parentActivityName=".MainActivity"
+            android:label="Player Detail">
          >
         <!-- Parent activity meta-data to support 4.0 and lower -->
         <meta-data

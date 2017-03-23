@@ -1,29 +1,25 @@
 package com.example.priyanshu.gyanmatrix;
 
-import android.app.LoaderManager;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.Loader;
-import android.graphics.Color;
+
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
 import android.os.Bundle;
 
-import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
+import android.text.TextUtils;
 import android.util.Log;
-import android.view.LayoutInflater;
+
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.RelativeLayout;
-import android.widget.SearchView;
+
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,12 +38,15 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+
+public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener {
     private BatsmanAdapter madapter;
     private RecyclerView recyclerView;
     private TextView mEmptyStateTextView;
     View loadingIndicator;
     private SearchView searchView;
+    private List<Batsman> filterlist;
+
     private MenuItem searchMenuItem;
     private List<Batsman> batsmanlist = new ArrayList<>();
     public static final String Log_TAG = MainActivity.class.getName();
@@ -97,10 +96,14 @@ public class MainActivity extends AppCompatActivity {
                     Batsman batsman = new Batsman(batsmanname, imageurl, discription, country, runs, matches);
 
                     batsmanlist.add(batsman);
+filterlist.add(batsman);
+
 
                 }
+
             }
-            madapter.notifyDataSetChanged();
+            madapter = new BatsmanAdapter(batsmanlist, this);
+            recyclerView.setAdapter(madapter);
 
         } catch (JSONException e) {
             // If an error is thrown when executing any of the above statements in the "try" block,
@@ -119,16 +122,35 @@ public class MainActivity extends AppCompatActivity {
         madapter = new BatsmanAdapter(batsmanlist, this);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         recyclerView.setLayoutManager(mLayoutManager);
+
+
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         loadingIndicator = findViewById(R.id.loading_indicator);
-
+        //.setTextFilterEnabled(true);
         recyclerView.setAdapter(madapter);
+        filterlist = new ArrayList<>();
         recyclerView.addOnItemTouchListener(
                 new RecyclerItemClickListener(getApplicationContext(), new RecyclerItemClickListener.OnItemClickListener() {
                     @Override
                     public void onItemClick(View view, int position) {
                         // TODO Handle item click
-                        Intent i = new Intent(MainActivity.this, Player.class);
+                        Intent i = new Intent(MainActivity.this,Player.class);
+
+                                Batsman currentbatsman=filterlist.get(position);
+
+
+                        String name=currentbatsman.getBatsmanname();
+                        String description=currentbatsman.getdescription();
+                        String imageurl=currentbatsman.getBatsmanimageurl();
+                        String nationality=currentbatsman.getnationality();
+                        int runs=currentbatsman.getruns();
+                        int matches=currentbatsman.getplayed();
+                        i.putExtra("name",name);
+                        i.putExtra("description",description);
+                        i.putExtra("imageurl",imageurl);
+                        i.putExtra("country",nationality);
+                        i.putExtra("runs",runs);
+                        i.putExtra("matches",matches);
                         startActivity(i);
 
 
@@ -164,56 +186,122 @@ public class MainActivity extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu, menu);
 
-        
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        searchMenuItem = menu.findItem(R.id.search);
+        searchView = (SearchView) searchMenuItem.getActionView();
+
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+        searchView.setSubmitButtonEnabled(true);
+        searchView.setOnQueryTextListener(this);
+
+        searchView.setQueryHint("Ex:Sachin..");
+
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        /*if (searchView.isShown()) {
+            searchMenuItem.collapseActionView();
+            searchView.setQuery("", false);
+        }*/
 
         int item_id = item.getItemId();
 
         switch (item_id) {
             case R.id.az: {
-                Collections.sort(batsmanlist, new Comparator<Batsman>(){
+                Collections.sort(filterlist, new Comparator<Batsman>() {
                     public int compare(Batsman s1, Batsman s2) {
                         return s1.getBatsmanname().compareToIgnoreCase(s2.getBatsmanname());
                     }
                 });
-                madapter.notifyDataSetChanged();
+                madapter = new BatsmanAdapter(filterlist, this);
+                recyclerView.setAdapter(madapter);
+
                 return true;
             }
 
             case R.id.matches: {
                 //layout.setBackgroundColor(Color.BLUE);
-                Collections.sort(batsmanlist, new Comparator<Batsman>(){
+                Collections.sort(filterlist, new Comparator<Batsman>() {
                     public int compare(Batsman s1, Batsman s2) {
-                        return  Integer.valueOf(s1.getplayed()).compareTo(s2.getplayed());
+                        return Integer.valueOf(s1.getplayed()).compareTo(s2.getplayed());
                     }
                 });
-                Collections.reverse(batsmanlist);
-                madapter.notifyDataSetChanged();
+                Collections.reverse(filterlist);
+                madapter = new BatsmanAdapter(filterlist, this);
+                recyclerView.setAdapter(madapter);
 
                 return true;
             }
 
             case R.id.runs: {
-               // layout.setBackgroundColor(Color.GREEN);
-                Collections.sort(batsmanlist, new Comparator<Batsman>(){
+                // layout.setBackgroundColor(Color.GREEN);
+                Collections.sort(filterlist, new Comparator<Batsman>() {
                     public int compare(Batsman s1, Batsman s2) {
-                        return  Integer.valueOf(s1.getruns()).compareTo(s2.getruns());
+                        return Integer.valueOf(s1.getruns()).compareTo(s2.getruns());
 
                     }
                 });
-                Collections.reverse(batsmanlist);
-                madapter.notifyDataSetChanged();
+                Collections.reverse(filterlist);
+                madapter = new BatsmanAdapter(filterlist, this);
+                recyclerView.setAdapter(madapter);
+
                 return true;
             }
+
 
 
         }
         return super.onOptionsItemSelected(item);
 
 
+    }
+
+    public boolean onQueryTextSubmit(String query) {
+        return false;
+    }
+
+    public boolean onQueryTextChange(String newText) {
+        Filter(newText);
+
+        // use to enable search view popup text
+       /*if (TextUtils.isEmpty(newText)) {
+            recyclerView.clearTextFilter();
+       }
+       else {
+           recyclerView.setFilterText(newText.toString());
+        }*/
+        return true;
+
+    }
+    public void Filter(final String text) {
+
+        // Searching could be complex..so we will dispatch it to a different thread...
+
+        // Clear the filter list
+        filterlist=new ArrayList<>();
+        filterlist.clear();
+
+        // If there is no search value, then add all original list items to filter list
+        if (TextUtils.isEmpty(text)) {
+
+            filterlist.addAll(batsmanlist);
+
+        } else {
+            // Iterate in the original List and add it to filter list...
+            for (Batsman item : batsmanlist) {
+                if (item.getBatsmanname().toLowerCase().contains(text.toLowerCase())) {
+                    // Adding Matched items
+                    filterlist.add(item);
+
+                }
+            }
+        }
+        madapter = new BatsmanAdapter(filterlist, this);
+        recyclerView.setAdapter(madapter);
+
+
+        // Notify the List that the DataSet has changed...
     }
 }
